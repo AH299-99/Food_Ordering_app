@@ -1,0 +1,271 @@
+/* =========================================================
+   ZAIQA POINT -- Design Tokens
+   A Pakistani food-ordering visual identity:
+   chili-red + turmeric-gold on a warm cream base.
+   ========================================================= */
+:root {
+    --zp-maroon: #B3282D;      /* primary / CTA / navbar */
+    --zp-maroon-dark: #8C1F23;
+    --zp-turmeric: #F5A623;    /* accent / badges / hover */
+    --zp-turmeric-dark: #D98C0F;
+    --zp-charcoal: #221F1F;    /* dark text / footer */
+    --zp-cream: #FFF8EF;       /* page background */
+    --zp-green: #3F7D4F;       /* success / fresh indicators */
+    --zp-card-radius: 16px;
+}
+
+body {
+    background-color: var(--zp-cream);
+    font-family: 'Inter', sans-serif;
+    color: var(--zp-charcoal);
+}
+
+h1, h2, h3, h4, h5, .zp-brand, .zp-heading {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: var(--zp-charcoal);
+}
+
+/* ---------- Navbar ---------- */
+.zp-navbar {
+    background: linear-gradient(90deg, var(--zp-maroon) 0%, var(--zp-maroon-dark) 100%);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+}
+.zp-brand {
+    font-weight: 800;
+    font-size: 1.35rem;
+    color: #fff !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.zp-brand-icon {
+    color: var(--zp-turmeric);
+    font-size: 1.4rem;
+}
+.zp-navbar .nav-link {
+    color: rgba(255,255,255,0.9) !important;
+    font-weight: 500;
+}
+.zp-navbar .nav-link:hover {
+    color: var(--zp-turmeric) !important;
+}
+.zp-user-pill {
+    background: rgba(255,255,255,0.15);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+/* ---------- Buttons ---------- */
+.zp-btn-accent, .btn-zp-accent {
+    background-color: var(--zp-turmeric);
+    border-color: var(--zp-turmeric);
+    color: var(--zp-charcoal);
+    font-weight: 600;
+    border-radius: 24px;
+}
+.zp-btn-accent:hover {
+    background-color: var(--zp-turmeric-dark);
+    border-color: var(--zp-turmeric-dark);
+    color: var(--zp-charcoal);
+}
+.btn-success, .zp-btn-primary {
+    background-color: var(--zp-maroon) !important;
+    border-color: var(--zp-maroon) !important;
+    border-radius: 24px !important;
+    font-weight: 600;
+}
+.btn-success:hover, .zp-btn-primary:hover {
+    background-color: var(--zp-maroon-dark) !important;
+    border-color: var(--zp-maroon-dark) !important;
+}
+.btn-primary {
+    background-color: var(--zp-charcoal);
+    border-color: var(--zp-charcoal);
+    border-radius: 24px;
+}
+
+/* ---------- Hero (menu page top banner) ---------- */
+.zp-hero {
+    background: linear-gradient(135deg, var(--zp-maroon) 0%, var(--zp-maroon-dark) 60%);
+    border-radius: var(--zp-card-radius);
+    color: #fff;
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.zp-hero::after {
+    /* subtle scalloped "plate edge" motif -- the signature touch */
+    content: "";
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 14px;
+    background-image: radial-gradient(circle, var(--zp-cream) 6px, transparent 7px);
+    background-size: 24px 24px;
+    background-position: 0 -6px;
+}
+.zp-hero h1 {
+    color: #fff;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+.zp-hero p {
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 0;
+}
+.zp-hero-badge {
+    display: inline-block;
+    background: var(--zp-turmeric);
+    color: var(--zp-charcoal);
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 0.75rem;
+}
+
+/* ---------- Category chips ---------- */
+.zp-chip {
+    display: inline-block;
+    background: #fff;
+    border: 1.5px solid #eee0cf;
+    color: var(--zp-charcoal);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin: 0 6px 10px 0;
+}
+
+/* ---------- Food cards ---------- */
+.zp-food-card {
+    border: none;
+    border-radius: var(--zp-card-radius);
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 3px 14px rgba(34,31,31,0.08);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    height: 100%;
+}
+.zp-food-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(34,31,31,0.15);
+}
+.zp-food-img-wrap {
+    position: relative;
+    height: 170px;
+    background: linear-gradient(135deg, #f3e4c8, #f7d9a8);
+    overflow: hidden;
+}
+.zp-food-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.zp-food-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--zp-maroon);
+    opacity: 0.5;
+}
+.zp-price-tag {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--zp-charcoal);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.85rem;
+    padding: 4px 12px;
+    border-radius: 16px;
+}
+.zp-rating {
+    color: var(--zp-turmeric-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.zp-food-card .card-body {
+    padding: 1rem 1.1rem 1.1rem;
+}
+.zp-food-card .card-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 2px;
+}
+.zp-category-label {
+    color: var(--zp-maroon);
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+/* ---------- Cards (dashboards / stats) ---------- */
+.card {
+    border-radius: var(--zp-card-radius);
+    border: none;
+}
+.zp-stat-card {
+    border-radius: var(--zp-card-radius);
+    color: #fff;
+    padding: 1.25rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+.zp-stat-maroon { background: linear-gradient(135deg, var(--zp-maroon), var(--zp-maroon-dark)); }
+.zp-stat-turmeric { background: linear-gradient(135deg, var(--zp-turmeric), var(--zp-turmeric-dark)); color: var(--zp-charcoal); }
+.zp-stat-charcoal { background: linear-gradient(135deg, #3a3636, var(--zp-charcoal)); }
+
+/* ---------- Tables ---------- */
+.table thead.table-dark th {
+    background-color: var(--zp-charcoal);
+    border: none;
+}
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ---------- Auth pages ---------- */
+.zp-auth-card {
+    border-radius: var(--zp-card-radius);
+    box-shadow: 0 6px 24px rgba(34,31,31,0.1);
+    overflow: hidden;
+}
+.zp-auth-header {
+    background: linear-gradient(135deg, var(--zp-maroon), var(--zp-maroon-dark));
+    color: #fff;
+    padding: 1.75rem;
+    text-align: center;
+}
+.zp-auth-header i {
+    font-size: 2rem;
+    color: var(--zp-turmeric);
+}
+
+.zp-alert {
+    border-radius: 12px;
+    border: none;
+}
+
+/* ---------- Footer ---------- */
+.zp-footer {
+    background: var(--zp-charcoal);
+    color: rgba(255,255,255,0.7);
+}
+.zp-footer .zp-brand {
+    justify-content: center;
+    color: #fff !important;
+}
+.zp-footer .zp-brand i {
+    color: var(--zp-turmeric);
+}
