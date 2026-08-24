@@ -1,0 +1,38 @@
+ZAIQA POINT - DESIGN UPGRADE NOTES (Roman Urdu)
+=================================================
+
+Ye naya professional design update hai. Nichay important baatein parhein:
+
+1) DATABASE RESET ZAROORI HAI
+   -------------------------
+   Naye version mein har menu item ke sath "image_url" aur "rating"
+   naye fields add hue hain. Purani "food_ordering.db" file in naye
+   fields ko nahi jaanti, is liye usay DELETE karke dobara banana
+   zaroori hai, warna app crash ho sakti hai.
+
+   Termux ya PythonAnywhere Bash console mein project folder ke
+   andar ye command chalayein:
+
+       rm food_ordering.db
+
+   Phir app dobara chalayein (Termux):
+       python app.py
+
+   Ya PythonAnywhere pe (Bash console se):
+       python3.10 -c "from app import init_db; init_db()"
+   Uske baad Web app ko Reload karna na bhoolein.
+
+2) APNI REAL FOOD PHOTOS KAISE LAGAYEIN
+   --------------------------------------
+   Admin login karke "Manage Menu" page par jayein. Har item ke
+   "Image URL" wale box mein apni khud ki khenchi hui food photo
+   ka link paste kar dein (Google Drive share link, Imgur, ya
+   Facebook photo link - jo bhi direct image link ho) aur "Save"
+   dabayein. Naya item add karte waqt bhi yahi option milega.
+
+3) BRAND NAAM BADALNA HO TO
+   -------------------------
+   app.py mein neeche wali line dhoondein aur naam badal dein:
+       brand_name="Zaiqa Point"
+
+Bas itna hi - baqi sab design automatic apply ho jayega!
