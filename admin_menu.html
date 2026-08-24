@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Manage Menu - {{ brand_name }}{% endblock %}
+{% block content %}
+<h3 class="zp-heading mb-3">Manage Menu Items</h3>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title zp-heading">Add New Item</h5>
+        <p class="text-muted small mb-3">
+            Tip: "Image URL" mein apni restaurant ki asal food photo ka link paste karein
+            (Google Drive/Imgur/Facebook photo link). Khaali chhorne par ek placeholder icon dikhega.
+        </p>
+        <form method="POST" action="{{ url_for('admin_menu_add') }}" class="row g-2">
+            <div class="col-md-3">
+                <input type="text" name="name" class="form-control" placeholder="Item name" required>
+            </div>
+            <div class="col-md-2">
+                <input type="number" step="0.01" name="price" class="form-control" placeholder="Price" required>
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="category" class="form-control" placeholder="Category" required>
+            </div>
+            <div class="col-md-3">
+                <input type="url" name="image_url" class="form-control" placeholder="Image URL (optional)">
+            </div>
+            <div class="col-md-1">
+                <input type="number" step="0.1" min="0" max="5" name="rating" class="form-control" placeholder="4.5">
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn zp-btn-primary text-white w-100">Add</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!--
+  Each row's inputs belong to a <form> declared OUTSIDE the <table>
+  and linked back via the HTML5 form="..." attribute, since a <form>
+  cannot legally be a direct child of <tr>.
+-->
+{% for item in items %}
+<form id="edit-form-{{ item.id }}" method="POST" action="{{ url_for('admin_menu_edit', item_id=item.id) }}"></form>
+{% endfor %}
+
+<div class="table-responsive">
+<table class="table table-bordered align-middle bg-white">
+    <thead class="table-dark">
+        <tr>
+            <th>Photo</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Category</th>
+            <th>Image URL</th>
+            <th>Rating</th>
+            <th style="width: 220px;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td style="width: 70px;">
+                <div style="width:56px;height:56px;border-radius:10px;overflow:hidden;background:#f3e4c8;display:flex;align-items:center;justify-content:center;">
+                    {% if item.image_url %}
+                        <img src="{{ item.image_url }}" style="width:100%;height:100%;object-fit:cover;"
+                             onerror="this.style.display='none'">
+                    {% else %}
+                        <i class="bi bi-egg-fried text-danger"></i>
+                    {% endif %}
+                </div>
+            </td>
+            <td>
+                <input type="text" name="name" value="{{ item.name }}" class="form-control"
+                       form="edit-form-{{ item.id }}" required>
+            </td>
+            <td>
+                <input type="number" step="0.01" name="price" value="{{ item.price }}" class="form-control"
+                       form="edit-form-{{ item.id }}" required>
+            </td>
+            <td>
+                <input type="text" name="category" value="{{ item.category }}" class="form-control"
+                       form="edit-form-{{ item.id }}" required>
+            </td>
+            <td>
+                <input type="url" name="image_url" value="{{ item.image_url or '' }}" class="form-control"
+                       form="edit-form-{{ item.id }}" placeholder="https://...">
+            </td>
+            <td style="width: 90px;">
+                <input type="number" step="0.1" min="0" max="5" name="rating" value="{{ item.rating }}" class="form-control"
+                       form="edit-form-{{ item.id }}">
+            </td>
+            <td>
+                <button type="submit" form="edit-form-{{ item.id }}" class="btn btn-sm zp-btn-primary text-white">Save</button>
+                <a href="{{ url_for('admin_menu_delete', item_id=item.id) }}"
+                   class="btn btn-sm btn-outline-danger"
+                   onclick="return confirm('Delete this item?');">Delete</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+
+{% if not items %}
+<div class="alert alert-secondary">No menu items yet. Add one above.</div>
+{% endif %}
+{% endblock %}

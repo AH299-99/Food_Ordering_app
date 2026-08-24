@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard - {{ brand_name }}{% endblock %}
+{% block content %}
+<h3 class="zp-heading mb-3">My Order History</h3>
+<a href="{{ url_for('menu') }}" class="btn zp-btn-primary text-white mb-3"><i class="bi bi-egg-fried"></i> Browse Menu</a>
+
+{% if orders %}
+<div class="table-responsive">
+<table class="table table-striped table-bordered bg-white">
+    <thead class="table-dark">
+        <tr>
+            <th>Order #</th>
+            <th>Item</th>
+            <th>Quantity</th>
+            <th>Price (each)</th>
+            <th>Total</th>
+            <th>Date</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.item.name }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>Rs. {{ order.item.price }}</td>
+            <td>Rs. {{ order.item.price * order.quantity }}</td>
+            <td>{{ order.order_date.strftime('%d-%b-%Y %H:%M') }}</td>
+            <td><span class="badge" style="background: var(--zp-green);">{{ order.status }}</span></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% else %}
+<div class="alert alert-secondary">You haven't placed any orders yet.</div>
+{% endif %}
+{% endblock %}

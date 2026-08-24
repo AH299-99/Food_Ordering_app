@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard - {{ brand_name }}{% endblock %}
+{% block content %}
+<h3 class="zp-heading mb-3">Admin Dashboard</h3>
+
+<div class="row mb-4 g-3">
+    <div class="col-md-4">
+        <div class="zp-stat-card zp-stat-maroon">
+            <div class="small opacity-75">Total Orders</div>
+            <h2 class="mb-0"><i class="bi bi-bag-check"></i> {{ total_orders }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="zp-stat-card zp-stat-turmeric">
+            <div class="small opacity-75">Total Revenue</div>
+            <h2 class="mb-0"><i class="bi bi-cash-coin"></i> Rs. {{ total_revenue }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="zp-stat-card zp-stat-charcoal">
+            <div class="small opacity-75">Menu</div>
+            <a href="{{ url_for('admin_menu') }}" class="btn zp-btn-accent btn-sm mt-2">
+                <i class="bi bi-pencil-square"></i> Manage Menu
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <h5 class="card-title zp-heading">Order Trends: Most Ordered Items</h5>
+        <p class="text-muted small">
+            Placeholder chart using aggregated/dummy data. This will be replaced by the
+            Scikit-learn based Demand Prediction Module in the next development phase.
+        </p>
+        {{ chart_html | safe }}
+    </div>
+</div>
+
+<h5 class="zp-heading">Recent Orders</h5>
+<div class="table-responsive">
+<table class="table table-bordered table-striped bg-white">
+    <thead class="table-dark">
+        <tr>
+            <th>Order #</th>
+            <th>Customer</th>
+            <th>Item</th>
+            <th>Qty</th>
+            <th>Date</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for order in orders[:10] %}
+        <tr>
+            <td>{{ order.id }}</td>
+            <td>{{ order.customer.username }}</td>
+            <td>{{ order.item.name }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ order.order_date.strftime('%d-%b-%Y %H:%M') }}</td>
+            <td>{{ order.status }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+<a href="{{ url_for('admin_orders') }}" class="btn btn-outline-dark rounded-pill">View All Orders</a>
+{% endblock %}

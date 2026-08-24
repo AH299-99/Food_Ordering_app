@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Menu - {{ brand_name }}{% endblock %}
+{% block content %}
+
+<div class="zp-hero">
+    <span class="zp-hero-badge">Aaj Ka Zaiqa</span>
+    <h1>Bhook lagi hai? Order kar lein!</h1>
+    <p>Taza aur garam khana, seedha aap ki dahleez tak.</p>
+</div>
+
+<div class="mb-4">
+    {% for category in categories %}
+    <span class="zp-chip"><i class="bi bi-egg-fried me-1"></i>{{ category }}</span>
+    {% endfor %}
+</div>
+
+{% for category in categories %}
+<h5 class="zp-heading mt-4 mb-3">{{ category }}</h5>
+<div class="row g-3">
+    {% for item in items if item.category == category %}
+    <div class="col-md-4">
+        <div class="card zp-food-card">
+            <div class="zp-food-img-wrap">
+                {% if item.image_url %}
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}"
+                         onerror="this.parentElement.innerHTML='<div class=&quot;zp-food-placeholder&quot;><i class=&quot;bi bi-egg-fried&quot;></i></div>';">
+                {% else %}
+                    <div class="zp-food-placeholder"><i class="bi bi-egg-fried"></i></div>
+                {% endif %}
+                <span class="zp-price-tag">Rs. {{ item.price | int }}</span>
+            </div>
+            <div class="card-body">
+                <div class="zp-category-label">{{ item.category }}</div>
+                <h5 class="card-title">{{ item.name }}</h5>
+                <div class="zp-rating mb-2">
+                    <i class="bi bi-star-fill"></i> {{ item.rating }}
+                    <span class="text-muted fw-normal">(placeholder rating)</span>
+                </div>
+                <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}" class="d-flex gap-2">
+                    <input type="number" name="quantity" value="1" min="1" class="form-control" style="width: 75px;">
+                    <button type="submit" class="btn zp-btn-primary text-white flex-grow-1">
+                        <i class="bi bi-cart-plus"></i> Add
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endfor %}
+
+{% if not items %}
+<div class="alert alert-secondary">No menu items available yet.</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Register - {{ brand_name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card zp-auth-card">
+            <div class="zp-auth-header">
+                <i class="bi bi-person-plus"></i>
+                <h3 class="mb-0 mt-2" style="color:#fff;">Create Account</h3>
+                <p class="mb-0 small opacity-75">Join {{ brand_name }} today</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select name="role" class="form-select">
+                            <option value="customer">Customer</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                        <div class="form-text">
+                            (In production, Admin role would not be self-selectable.
+                            Kept open here for easy testing in this prototype.)
+                        </div>
+                    </div>
+                    <button type="submit" class="btn zp-btn-accent w-100">
+                        <i class="bi bi-person-check"></i> Register
+                    </button>
+                </form>
+                <p class="mt-3 text-center">
+                    Already have an account? <a href="{{ url_for('login') }}">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

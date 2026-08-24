@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Login - {{ brand_name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card zp-auth-card">
+            <div class="zp-auth-header">
+                <i class="bi bi-egg-fried"></i>
+                <h3 class="mb-0 mt-2" style="color:#fff;">Welcome Back</h3>
+                <p class="mb-0 small opacity-75">Login to {{ brand_name }}</p>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn zp-btn-primary text-white w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </button>
+                </form>
+                <p class="mt-3 text-center">
+                    No account? <a href="{{ url_for('register') }}">Register here</a>
+                </p>
+                <hr>
+                <p class="text-muted small mb-0">
+                    Demo accounts (seeded automatically):<br>
+                    Admin &rarr; <code>admin / admin123</code><br>
+                    Customer &rarr; <code>customer / customer123</code>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

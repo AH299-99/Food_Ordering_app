@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}My Cart - {{ brand_name }}{% endblock %}
+{% block content %}
+<h3 class="zp-heading mb-3"><i class="bi bi-cart3"></i> My Cart</h3>
+
+{% if cart_items %}
+<div class="table-responsive">
+<table class="table table-bordered bg-white align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>Item</th>
+            <th>Price</th>
+            <th>Qty</th>
+            <th>Subtotal</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in cart_items %}
+        <tr>
+            <td>{{ row.item.name }}</td>
+            <td>Rs. {{ row.item.price }}</td>
+            <td>{{ row.qty }}</td>
+            <td>Rs. {{ row.subtotal }}</td>
+            <td><a href="{{ url_for('remove_from_cart', item_id=row.item.id) }}" class="btn btn-sm btn-outline-danger">Remove</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr class="table-light">
+            <th colspan="3">Total</th>
+            <th>Rs. {{ total }}</th>
+            <th></th>
+        </tr>
+    </tfoot>
+</table>
+</div>
+
+<form method="POST" action="{{ url_for('checkout') }}" class="d-flex gap-2">
+    <button type="submit" class="btn zp-btn-primary text-white"><i class="bi bi-check2-circle"></i> Place Order</button>
+    <a href="{{ url_for('menu') }}" class="btn btn-outline-dark rounded-pill">Continue Browsing</a>
+</form>
+
+{% else %}
+<div class="alert alert-secondary">Your cart is empty.</div>
+<a href="{{ url_for('menu') }}" class="btn zp-btn-primary text-white">Go to Menu</a>
+{% endif %}
+{% endblock %}
