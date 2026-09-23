@@ -1,36 +1,37 @@
 """
-Online Food Ordering System with Demand Prediction
-----------------------------------------------------
-TEST PHASE PROTOTYPE
+Online Food Ordering System ("Zaiqa Point")
+--------------------------------------------
+Flask backend: user auth, menu CRUD (admin), cart + checkout, order
+history, and an admin dashboard with a "Most Ordered Items" chart.
 
-This file contains the full Flask backend for the test-phase prototype:
-- User authentication (Admin / Customer roles)
-- Menu management (CRUD for Admin)
-- Cart + Order placement (Customer)
-- Order history (Customer)
-- Admin dashboard with a Plotly chart of "Most Ordered Items"
-  (uses real order data once orders exist, falls back to seeded
-  dummy data so the chart is never empty -- this is a placeholder
-  for the real ML "Demand Prediction Module" that will replace it later)
+Security notes (hardened):
+- SECRET_KEY comes from the environment; the app refuses to boot without it.
+- Public registration can ONLY create customer accounts.
+- No default/seeded credentials exist. Create the first admin with
+  `scripts/create_admin.py` (reads ADMIN_USERNAME / ADMIN_PASSWORD from env).
+- Debug mode is off unless FLASK_DEBUG=1 is set (local dev only).
+- All state-changing routes require POST and are CSRF-protected (Flask-WTF).
 
-Run with:
+Run locally:
     pip install -r requirements.txt
+    export SECRET_KEY='<long random string>'
+    python scripts/create_admin.py   # first admin account
     python app.py
-
-The SQLite database (food_ordering.db) and all tables are created
-automatically the first time the app runs (see init_db()).
 """
 
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
+from urllib.parse import urlparse
 
 from flask import (
     Flask, render_template, redirect, url_for,
-    request, session, flash
+    request, session, flash, abort
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
+
 import plotly.graph_objects as go
 import plotly.io as pio
 
@@ -40,12 +41,33 @@ import plotly.io as pio
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# The secret key signs session cookies. There is deliberately NO fallback
+# default: booting without one would silently weaken every session.
+secret_key = os.environ.get("SECRET_KEY")
+if not secret_key:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Generate one (e.g. `python -c \"import secrets; print(secrets.token_hex(32))\"`) "
+        "and export it before starting the app. See .env.example."
+    )
+
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "change-this-secret-key-in-production"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "food_ordering.db")
+app.config["SECRET_KEY"] = secret_key
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "DATABASE_URL",
+    "sqlite:///" + os.path.join(BASE_DIR, "food_ordering.db"),
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
+# Harden the session cookie. SESSION_COOKIE_SECURE can be disabled for plain
+# local HTTP dev via SESSION_COOKIE_SECURE=0, but stays on by default.
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("SESSION_COOKIE_SECURE", "1") == "1"
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=1)
+
 db = SQLAlchemy(app)
+csrf = CSRFProtect(app)  # CSRF tokens required on every POST form
 
 
 # ----------------------------------------------------------------------
@@ -76,13 +98,9 @@ class MenuItem(db.Model):
     name = db.Column(db.String(120), nullable=False)
     price = db.Column(db.Float, nullable=False)
     category = db.Column(db.String(80), nullable=False)
-    # Photo shown on the menu card. Admin can paste any direct image link
-    # (their own restaurant photo, or a stock photo URL). If left blank,
-    # the template shows a tasteful gradient placeholder instead of a
-    # broken image icon.
+    # Photo shown on the menu card. Only http(s) URLs are accepted (see
+    # _sanitize_image_url) so a stored `javascript:` URL can never execute.
     image_url = db.Column(db.String(500), nullable=True)
-    # Simple static rating used for the professional "real food app" look.
-    # Not user-submitted yet -- a placeholder until a review system exists.
     rating = db.Column(db.Float, nullable=False, default=4.5)
 
     order_items = db.relationship("Order", backref="item", lazy=True)
@@ -125,8 +143,51 @@ def admin_required(f):
 
 def current_user():
     if "user_id" in session:
-        return User.query.get(session["user_id"])
+        return db.session.get(User, session["user_id"])
     return None
+
+
+# ----------------------------------------------------------------------
+# Input validation helpers
+# ----------------------------------------------------------------------
+
+def _parse_int(value, default=None, minimum=None):
+    """Parse an int from form input; return `default` when invalid."""
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return default
+    if minimum is not None and number < minimum:
+        return default
+    return number
+
+
+def _parse_float(value, default=None, minimum=None, maximum=None):
+    """Parse a float from form input; return `default` when invalid."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    if minimum is not None and number < minimum:
+        return default
+    if maximum is not None and number > maximum:
+        return default
+    return number
+
+
+def _sanitize_image_url(raw_url):
+    """
+    Allow only http(s) image URLs. Returns the cleaned URL, or None when
+    blank. Returns the sentinel False when a non-blank URL has a dangerous
+    or unsupported scheme (so the caller can reject it loudly).
+    """
+    url = (raw_url or "").strip()
+    if not url:
+        return None
+    scheme = urlparse(url).scheme.lower()
+    if scheme not in ("http", "https"):
+        return False
+    return url
 
 
 # ----------------------------------------------------------------------
@@ -134,19 +195,13 @@ def current_user():
 # ----------------------------------------------------------------------
 
 def init_db():
-    """Create all tables (if they don't exist) and seed placeholder data."""
+    """Create all tables (if they don't exist) and seed placeholder data.
+
+    NOTE: no user accounts are seeded here. The first admin must be created
+    explicitly via `scripts/create_admin.py`.
+    """
     with app.app_context():
         db.create_all()
-
-        # Seed a default admin account if no users exist yet
-        if User.query.count() == 0:
-            admin = User(username="admin", role="admin")
-            admin.set_password("admin123")
-            customer = User(username="customer", role="customer")
-            customer.set_password("customer123")
-            db.session.add_all([admin, customer])
-            db.session.commit()
-            print("Seeded default users -> admin/admin123 , customer/customer123")
 
         # Seed a small dummy menu if empty
         # (image_url values are placeholder stock photos so the demo looks
@@ -189,7 +244,8 @@ def init_db():
             db.session.commit()
             print("Seeded dummy menu items.")
 
-        # Seed a few dummy orders so the admin chart isn't empty on first run
+        # Seed a few dummy orders so the admin chart isn't empty on first run.
+        # Only possible once at least one customer account exists.
         if Order.query.count() == 0:
             cust = User.query.filter_by(role="customer").first()
             items = MenuItem.query.all()
@@ -222,15 +278,23 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form["username"].strip()
-        password = request.form["password"]
-        role = request.form.get("role", "customer")
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
 
+        # Public registration can ONLY create customer accounts. Any
+        # client-supplied "role" field is deliberately ignored so privilege
+        # escalation via crafted POST data is impossible.
+        if not username:
+            flash("Username is required.", "danger")
+            return redirect(url_for("register"))
+        if len(password) < 6:
+            flash("Password must be at least 6 characters.", "danger")
+            return redirect(url_for("register"))
         if User.query.filter_by(username=username).first():
             flash("Username already exists. Choose another.", "danger")
             return redirect(url_for("register"))
 
-        user = User(username=username, role=role)
+        user = User(username=username, role="customer")
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -244,11 +308,14 @@ def register():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form["username"].strip()
-        password = request.form["password"]
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
 
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            # Clear any pre-existing session first (session fixation defense)
+            # before issuing the authenticated session.
+            session.clear()
             session["user_id"] = user.id
             session["username"] = user.username
             session["role"] = user.role
@@ -260,7 +327,7 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     flash("You have been logged out.", "info")
@@ -282,8 +349,11 @@ def menu():
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
 @login_required
 def add_to_cart(item_id):
+    item = db.session.get(MenuItem, item_id)
+    if item is None:
+        abort(404)
+    qty = _parse_int(request.form.get("quantity"), default=1, minimum=1)
     cart = session.get("cart", {})
-    qty = int(request.form.get("quantity", 1))
     cart[str(item_id)] = cart.get(str(item_id), 0) + qty
     session["cart"] = cart
     session.modified = True
@@ -298,15 +368,22 @@ def view_cart():
     cart_items = []
     total = 0
     for item_id_str, qty in cart.items():
-        item = MenuItem.query.get(int(item_id_str))
+        try:
+            item_id = int(item_id_str)
+        except (TypeError, ValueError):
+            continue
+        item = db.session.get(MenuItem, item_id)
         if item:
+            qty = _parse_int(qty, default=0, minimum=1)
+            if not qty:
+                continue
             subtotal = item.price * qty
             total += subtotal
             cart_items.append({"item": item, "qty": qty, "subtotal": subtotal})
     return render_template("cart.html", cart_items=cart_items, total=total)
 
 
-@app.route("/cart/remove/<int:item_id>")
+@app.route("/cart/remove/<int:item_id>", methods=["POST"])
 @login_required
 def remove_from_cart(item_id):
     cart = session.get("cart", {})
@@ -325,9 +402,16 @@ def checkout():
         return redirect(url_for("menu"))
 
     for item_id_str, qty in cart.items():
+        try:
+            item_id = int(item_id_str)
+        except (TypeError, ValueError):
+            continue
+        qty = _parse_int(qty, default=0, minimum=1)
+        if not qty or db.session.get(MenuItem, item_id) is None:
+            continue
         order = Order(
             user_id=session["user_id"],
-            item_id=int(item_id_str),
+            item_id=item_id,
             quantity=qty,
             status="Placed",
         )
@@ -413,18 +497,43 @@ def admin_menu():
     return render_template("admin_menu.html", items=items)
 
 
+def _menu_item_from_form():
+    """Validate admin menu form input. Returns (fields, error_message)."""
+    name = (request.form.get("name") or "").strip()
+    category = (request.form.get("category") or "").strip()
+    price = _parse_float(request.form.get("price"), minimum=0.01)
+    rating = _parse_float(request.form.get("rating") or 4.5, default=4.5,
+                          minimum=0, maximum=5)
+    image_url = _sanitize_image_url(request.form.get("image_url"))
+
+    if not name:
+        return None, "Item name is required."
+    if not category:
+        return None, "Category is required."
+    if price is None:
+        return None, "Price must be a positive number."
+    if rating is None:
+        return None, "Rating must be between 0 and 5."
+    if image_url is False:
+        return None, "Image URL must start with http:// or https://."
+
+    return (
+        {"name": name, "price": price, "category": category,
+         "image_url": image_url, "rating": rating},
+        None,
+    )
+
+
 @app.route("/admin/menu/add", methods=["POST"])
 @login_required
 @admin_required
 def admin_menu_add():
-    name = request.form["name"].strip()
-    price = float(request.form["price"])
-    category = request.form["category"].strip()
-    image_url = request.form.get("image_url", "").strip() or None
-    rating = float(request.form.get("rating") or 4.5)
+    fields, error = _menu_item_from_form()
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("admin_menu"))
 
-    item = MenuItem(name=name, price=price, category=category,
-                     image_url=image_url, rating=rating)
+    item = MenuItem(**fields)
     db.session.add(item)
     db.session.commit()
     flash("Menu item added.", "success")
@@ -435,22 +544,28 @@ def admin_menu_add():
 @login_required
 @admin_required
 def admin_menu_edit(item_id):
-    item = MenuItem.query.get_or_404(item_id)
-    item.name = request.form["name"].strip()
-    item.price = float(request.form["price"])
-    item.category = request.form["category"].strip()
-    item.image_url = request.form.get("image_url", "").strip() or None
-    item.rating = float(request.form.get("rating") or item.rating)
+    item = db.session.get(MenuItem, item_id)
+    if item is None:
+        abort(404)
+    fields, error = _menu_item_from_form()
+    if error:
+        flash(error, "danger")
+        return redirect(url_for("admin_menu"))
+
+    for key, value in fields.items():
+        setattr(item, key, value)
     db.session.commit()
     flash("Menu item updated.", "success")
     return redirect(url_for("admin_menu"))
 
 
-@app.route("/admin/menu/delete/<int:item_id>")
+@app.route("/admin/menu/delete/<int:item_id>", methods=["POST"])
 @login_required
 @admin_required
 def admin_menu_delete(item_id):
-    item = MenuItem.query.get_or_404(item_id)
+    item = db.session.get(MenuItem, item_id)
+    if item is None:
+        abort(404)
     db.session.delete(item)
     db.session.commit()
     flash("Menu item deleted.", "info")
@@ -480,4 +595,7 @@ def inject_user():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    # Debug mode is OFF by default. Enable only for local development with
+    # FLASK_DEBUG=1 -- never in production.
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(debug=debug)

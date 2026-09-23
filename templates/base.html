@@ -43,7 +43,12 @@
                     <li class="nav-item ms-lg-2">
                         <span class="zp-user-pill"><i class="bi bi-person-circle"></i> {{ current_user.username }}</span>
                     </li>
-                    <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
+                    <li class="nav-item">
+                        <form method="POST" action="{{ url_for('logout') }}" class="d-inline">
+                            {{ csrf_token() }}
+                            <button type="submit" class="nav-link btn btn-link p-0" style="text-decoration:none;">Logout</button>
+                        </form>
+                    </li>
                 {% else %}
                     <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
                     <li class="nav-item">
