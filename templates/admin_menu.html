@@ -11,6 +11,7 @@
             (Google Drive/Imgur/Facebook photo link). Khaali chhorne par ek placeholder icon dikhega.
         </p>
         <form method="POST" action="{{ url_for('admin_menu_add') }}" class="row g-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="col-md-3">
                 <input type="text" name="name" class="form-control" placeholder="Item name" required>
             </div>
@@ -39,7 +40,9 @@
   cannot legally be a direct child of <tr>.
 -->
 {% for item in items %}
-<form id="edit-form-{{ item.id }}" method="POST" action="{{ url_for('admin_menu_edit', item_id=item.id) }}"></form>
+<form id="edit-form-{{ item.id }}" method="POST" action="{{ url_for('admin_menu_edit', item_id=item.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
 {% endfor %}
 
 <div class="table-responsive">
@@ -90,9 +93,11 @@
             </td>
             <td>
                 <button type="submit" form="edit-form-{{ item.id }}" class="btn btn-sm zp-btn-primary text-white">Save</button>
-                <a href="{{ url_for('admin_menu_delete', item_id=item.id) }}"
-                   class="btn btn-sm btn-outline-danger"
-                   onclick="return confirm('Delete this item?');">Delete</a>
+                <form method="POST" action="{{ url_for('admin_menu_delete', item_id=item.id) }}" class="d-inline"
+                      onsubmit="return confirm('Delete this item?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
             </td>
         </tr>
         {% endfor %}

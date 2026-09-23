@@ -30,6 +30,7 @@ from flask import (
     request, session, flash
 )
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -41,11 +42,14 @@ import plotly.io as pio
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "change-this-secret-key-in-production"
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY")
+if not app.config["SECRET_KEY"]:
+    raise RuntimeError("SECRET_KEY must be set before starting the application")
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(BASE_DIR, "food_ordering.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+csrf = CSRFProtect(app)
 
 
 # ----------------------------------------------------------------------
@@ -134,19 +138,9 @@ def current_user():
 # ----------------------------------------------------------------------
 
 def init_db():
-    """Create all tables (if they don't exist) and seed placeholder data."""
+    """Create tables and optional non-sensitive demo menu data."""
     with app.app_context():
         db.create_all()
-
-        # Seed a default admin account if no users exist yet
-        if User.query.count() == 0:
-            admin = User(username="admin", role="admin")
-            admin.set_password("admin123")
-            customer = User(username="customer", role="customer")
-            customer.set_password("customer123")
-            db.session.add_all([admin, customer])
-            db.session.commit()
-            print("Seeded default users -> admin/admin123 , customer/customer123")
 
         # Seed a small dummy menu if empty
         # (image_url values are placeholder stock photos so the demo looks
@@ -189,7 +183,7 @@ def init_db():
             db.session.commit()
             print("Seeded dummy menu items.")
 
-        # Seed a few dummy orders so the admin chart isn't empty on first run
+        # Seed demo orders only when a real customer already exists.
         if Order.query.count() == 0:
             cust = User.query.filter_by(role="customer").first()
             items = MenuItem.query.all()
@@ -222,15 +216,19 @@ def home():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = request.form["username"].strip()
+        username = request.form.get("username", "").strip()
         password = request.form["password"]
-        role = request.form.get("role", "customer")
+        if not 3 <= len(username) <= 80 or len(password) < 12:
+            flash("Use a username between 3 and 80 characters and a password of at least 12 characters.", "danger")
+            return redirect(url_for("register"))
 
         if User.query.filter_by(username=username).first():
             flash("Username already exists. Choose another.", "danger")
             return redirect(url_for("register"))
 
-        user = User(username=username, role=role)
+        # Never trust a client-supplied role. Privileged accounts are created
+        # by the separate secure seed script or by an existing administrator.
+        user = User(username=username, role="customer")
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -260,7 +258,7 @@ def login():
     return render_template("login.html")
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     flash("You have been logged out.", "info")
@@ -283,7 +281,14 @@ def menu():
 @login_required
 def add_to_cart(item_id):
     cart = session.get("cart", {})
-    qty = int(request.form.get("quantity", 1))
+    try:
+        qty = int(request.form.get("quantity", 1))
+    except (TypeError, ValueError):
+        flash("Quantity must be a whole number.", "danger")
+        return redirect(url_for("menu"))
+    if not 1 <= qty <= 99 or not MenuItem.query.get(item_id):
+        flash("Invalid menu item or quantity.", "danger")
+        return redirect(url_for("menu"))
     cart[str(item_id)] = cart.get(str(item_id), 0) + qty
     session["cart"] = cart
     session.modified = True
@@ -306,7 +311,7 @@ def view_cart():
     return render_template("cart.html", cart_items=cart_items, total=total)
 
 
-@app.route("/cart/remove/<int:item_id>")
+@app.route("/cart/remove/<int:item_id>", methods=["POST"])
 @login_required
 def remove_from_cart(item_id):
     cart = session.get("cart", {})
@@ -418,10 +423,17 @@ def admin_menu():
 @admin_required
 def admin_menu_add():
     name = request.form["name"].strip()
-    price = float(request.form["price"])
+    try:
+        price = float(request.form["price"])
+        rating = float(request.form.get("rating") or 4.5)
+    except (TypeError, ValueError):
+        flash("Price and rating must be valid numbers.", "danger")
+        return redirect(url_for("admin_menu"))
     category = request.form["category"].strip()
     image_url = request.form.get("image_url", "").strip() or None
-    rating = float(request.form.get("rating") or 4.5)
+    if not name or not category or price < 0 or not 0 <= rating <= 5:
+        flash("Please provide valid menu details.", "danger")
+        return redirect(url_for("admin_menu"))
 
     item = MenuItem(name=name, price=price, category=category,
                      image_url=image_url, rating=rating)
@@ -437,16 +449,23 @@ def admin_menu_add():
 def admin_menu_edit(item_id):
     item = MenuItem.query.get_or_404(item_id)
     item.name = request.form["name"].strip()
-    item.price = float(request.form["price"])
+    try:
+        item.price = float(request.form["price"])
+        item.rating = float(request.form.get("rating") or item.rating)
+    except (TypeError, ValueError):
+        flash("Price and rating must be valid numbers.", "danger")
+        return redirect(url_for("admin_menu"))
     item.category = request.form["category"].strip()
     item.image_url = request.form.get("image_url", "").strip() or None
-    item.rating = float(request.form.get("rating") or item.rating)
+    if not item.name or not item.category or item.price < 0 or not 0 <= item.rating <= 5:
+        flash("Please provide valid menu details.", "danger")
+        return redirect(url_for("admin_menu"))
     db.session.commit()
     flash("Menu item updated.", "success")
     return redirect(url_for("admin_menu"))
 
 
-@app.route("/admin/menu/delete/<int:item_id>")
+@app.route("/admin/menu/delete/<int:item_id>", methods=["POST"])
 @login_required
 @admin_required
 def admin_menu_delete(item_id):
@@ -480,4 +499,4 @@ def inject_user():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=True)
+    app.run(debug=os.environ.get("FLASK_DEBUG", "0") == "1")
