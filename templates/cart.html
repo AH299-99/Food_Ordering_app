@@ -24,7 +24,7 @@
             <td>Rs. {{ row.subtotal }}</td>
             <td>
                 <form method="POST" action="{{ url_for('remove_from_cart', item_id=row.item.id) }}" class="d-inline">
-                    {{ csrf_token() }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
                 </form>
             </td>
@@ -42,7 +42,7 @@
 </div>
 
 <form method="POST" action="{{ url_for('checkout') }}" class="d-flex gap-2">
-    {{ csrf_token() }}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <button type="submit" class="btn zp-btn-primary text-white"><i class="bi bi-check2-circle"></i> Place Order</button>
     <a href="{{ url_for('menu') }}" class="btn btn-outline-dark rounded-pill">Continue Browsing</a>
 </form>

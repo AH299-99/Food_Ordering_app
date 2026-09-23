@@ -37,7 +37,7 @@
                     <span class="text-muted fw-normal">(placeholder rating)</span>
                 </div>
                 <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}" class="d-flex gap-2">
-                    {{ csrf_token() }}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="number" name="quantity" value="1" min="1" class="form-control" style="width: 75px;">
                     <button type="submit" class="btn zp-btn-primary text-white flex-grow-1">
                         <i class="bi bi-cart-plus"></i> Add
