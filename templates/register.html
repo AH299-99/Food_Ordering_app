@@ -11,6 +11,7 @@
             </div>
             <div class="card-body p-4">
                 <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label class="form-label">Username</label>
                         <input type="text" name="username" class="form-control" required autofocus>
@@ -18,17 +19,6 @@
                     <div class="mb-3">
                         <label class="form-label">Password</label>
                         <input type="password" name="password" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <select name="role" class="form-select">
-                            <option value="customer">Customer</option>
-                            <option value="admin">Admin</option>
-                        </select>
-                        <div class="form-text">
-                            (In production, Admin role would not be self-selectable.
-                            Kept open here for easy testing in this prototype.)
-                        </div>
                     </div>
                     <button type="submit" class="btn zp-btn-accent w-100">
                         <i class="bi bi-person-check"></i> Register

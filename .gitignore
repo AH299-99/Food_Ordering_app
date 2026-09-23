@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.env
+.env.*
+!.env.example
+food_ordering.db
+instance/
+.pytest_cache/
+.coverage
+htmlcov/
+.vscode/
+.DS_Store
