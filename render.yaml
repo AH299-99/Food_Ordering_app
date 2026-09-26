@@ -1,0 +1,16 @@
+# Render Blueprint for Zaiqa Point (Flask food-ordering prototype).
+# Deploy: Render Dashboard -> New -> Blueprint -> select the Food_Ordering_app repo.
+# SECRET_KEY is auto-generated. Uses SQLite on the instance disk (demo data
+# resets when the free instance restarts — fine for a prototype).
+services:
+  - type: web
+    name: zaiqa-point
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: SECRET_KEY
+        generateValue: true
