@@ -74,6 +74,35 @@ class SecurityTestCase(unittest.TestCase):
             resp = self._login(username, password)
             self.assertIn(b"Invalid username or password", resp.data)
 
+    # -- 4b. menu seeding: 3 dishes per category, dead Karahi photo repaired -
+    def test_seed_menu_three_per_category(self):
+        from app import init_db, BROKEN_KARAHI_URL
+        init_db()
+        items = MenuItem.query.all()
+        self.assertEqual(len(items), 12)
+        by_cat = {}
+        for i in items:
+            by_cat.setdefault(i.category, []).append(i)
+        for cat in ("Beverages", "Fast Food", "Main Course", "Sides"):
+            self.assertGreaterEqual(len(by_cat.get(cat, [])), 3, cat)
+        karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
+        self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
+        for i in items:
+            self.assertTrue(i.image_url.startswith("https://"))
+
+    def test_seed_is_idempotent_and_repairs_broken_karahi(self):
+        from app import init_db, BROKEN_KARAHI_URL
+        db.session.add(MenuItem(name="Chicken Karahi", price=1200,
+                                category="Main Course", rating=4.8,
+                                image_url=BROKEN_KARAHI_URL))
+        db.session.commit()
+        init_db()
+        init_db()  # second run must not duplicate
+        items = MenuItem.query.all()
+        self.assertEqual(len(items), 12)
+        karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
+        self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
+
     # -- 5. state-changing routes reject GET ------------------------------
     def test_logout_requires_post(self):
         self._register("u1", "password123")

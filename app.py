@@ -204,6 +204,42 @@ def _sanitize_image_url(raw_url):
 # Database initialization + dummy seed data
 # ----------------------------------------------------------------------
 
+# Canonical menu: every category has at least 3 dishes.
+# (image_url values are placeholder stock photos so the demo looks
+# like a real food-ordering app out of the box -- replace them with
+# your own restaurant's photos any time from Admin > Manage Menu)
+SEED_MENU_ITEMS = [
+    dict(name="Chicken Biryani", price=350, category="Main Course", rating=4.7,
+         image_url="https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=600&h=450&fit=crop"),
+    dict(name="Chicken Karahi", price=1200, category="Main Course", rating=4.8,
+         image_url="https://forksandfigs.com/wp-content/uploads/2025/05/rich_flavorful_chicken_karahi_kb5hp.jpg"),
+    dict(name="Beef Chapli Kebab", price=600, category="Main Course", rating=4.7,
+         image_url="https://www.remitly.com/blog/wp-content/uploads/2024/08/Chapli-Kebab-pakistan-1024x730.jpg"),
+    dict(name="Beef Burger", price=450, category="Fast Food", rating=4.4,
+         image_url="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=450&fit=crop"),
+    dict(name="Vegetable Pizza", price=900, category="Fast Food", rating=4.6,
+         image_url="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=450&fit=crop"),
+    dict(name="Chicken Zinger Burger", price=380, category="Fast Food", rating=4.6,
+         image_url="https://izzycooking.com/wp-content/uploads/2021/03/Zinger-Burger-3.jpg"),
+    dict(name="Cold Coffee", price=250, category="Beverages", rating=4.3,
+         image_url="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&h=450&fit=crop"),
+    dict(name="Mango Lassi", price=200, category="Beverages", rating=4.5,
+         image_url="https://www.vegrecipesofindia.com/wp-content/uploads/2021/05/mango-lassi-recipe-2.jpg"),
+    dict(name="Mint Margarita", price=180, category="Beverages", rating=4.4,
+         image_url="https://www.acouplecooks.com/wp-content/uploads/2022/04/Mint-Lemonade-006.jpg"),
+    dict(name="French Fries", price=200, category="Sides", rating=4.5,
+         image_url="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=450&fit=crop"),
+    dict(name="Garlic Naan", price=80, category="Sides", rating=4.5,
+         image_url="https://recipesize.com/wp-content/uploads/2026/06/u7196759841_Garlic_Naan_Bread_front_angle_shot_low_angle_shot_k_d9ba3362-74ca-41db-81de-f6ab62690012-768x768.webp"),
+    dict(name="Masala Fries", price=250, category="Sides", rating=4.4,
+         image_url="https://www.jcookingodyssey.com/wp-content/uploads/2021/09/masala-chips-blog-1.jpg"),
+]
+
+# The old Chicken Karahi photo URL went dead (404). If a database still
+# carries it, swap in the working one -- admin-uploaded photos are left alone.
+BROKEN_KARAHI_URL = "https://images.unsplash.com/photo-1585937421612-70a008356fa1?w=600&h=450&fit=crop"
+
+
 def init_db():
     """Create all tables (if they don't exist) and seed placeholder data.
 
@@ -213,46 +249,18 @@ def init_db():
     with app.app_context():
         db.create_all()
 
-        # Seed a small dummy menu if empty
-        # (image_url values are placeholder stock photos so the demo looks
-        # like a real food-ordering app out of the box -- replace them with
-        # your own restaurant's photos any time from Admin > Manage Menu)
-        if MenuItem.query.count() == 0:
-            dummy_items = [
-                MenuItem(
-                    name="Chicken Biryani", price=350, category="Main Course",
-                    rating=4.7,
-                    image_url="https://images.unsplash.com/photo-1589302168068-964664d93dc0?w=600&h=450&fit=crop",
-                ),
-                MenuItem(
-                    name="Beef Burger", price=450, category="Fast Food",
-                    rating=4.4,
-                    image_url="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=450&fit=crop",
-                ),
-                MenuItem(
-                    name="Vegetable Pizza", price=900, category="Fast Food",
-                    rating=4.6,
-                    image_url="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=450&fit=crop",
-                ),
-                MenuItem(
-                    name="Chicken Karahi", price=1200, category="Main Course",
-                    rating=4.8,
-                    image_url="https://images.unsplash.com/photo-1585937421612-70a008356fa1?w=600&h=450&fit=crop",
-                ),
-                MenuItem(
-                    name="Cold Coffee", price=250, category="Beverages",
-                    rating=4.3,
-                    image_url="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&h=450&fit=crop",
-                ),
-                MenuItem(
-                    name="French Fries", price=200, category="Sides",
-                    rating=4.5,
-                    image_url="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=450&fit=crop",
-                ),
-            ]
-            db.session.add_all(dummy_items)
-            db.session.commit()
-            print("Seeded dummy menu items.")
+        # Idempotent menu seeding: add any missing seed dishes (so redeploys
+        # grow the menu on existing databases) and repair the dead Karahi
+        # photo URL. Admin-customized dishes are never touched.
+        for spec in SEED_MENU_ITEMS:
+            item = MenuItem.query.filter_by(name=spec["name"]).first()
+            if item is None:
+                db.session.add(MenuItem(**spec))
+                print(f"Seeded menu item: {spec['name']}")
+            elif item.image_url == BROKEN_KARAHI_URL:
+                item.image_url = spec["image_url"]
+                print("Repaired Chicken Karahi image URL.")
+        db.session.commit()
 
         # Seed a few dummy orders so the admin chart isn't empty on first run.
         # Only possible once at least one customer account exists.
