@@ -226,7 +226,7 @@ SEED_MENU_ITEMS = [
     dict(name="Chicken Shawarma", price=300, category="Fast Food", rating=4.5,
          image_url="https://framerusercontent.com/images/92eSB6xiJFZJjmChoR5OxKtCyAU.png?width=1024&height=1536"),
     dict(name="Chicken Paratha Roll", price=350, category="Fast Food", rating=4.7,
-         image_url="https://pizzacottage.pro/images/chicken_pratha_roll_user.webp"),
+         image_url="https://openkitchen.com.np/wp-content/uploads/2023/09/WhatsApp-Image-2023-09-19-at-12.39.51-PM-1.jpeg"),
     dict(name="Chicken Tikka Pizza", price=950, category="Fast Food", rating=4.6,
          image_url="https://cdn.cheapism.com/images/chicken-tikka-pizza.original.jpg"),
     dict(name="Doodh Patti", price=120, category="Beverages", rating=4.6,
@@ -259,6 +259,7 @@ RETIRED_SEED_ITEMS = [
 # The old Chicken Karahi photo URL went dead (404). If a database still
 # carries it, swap in the working one -- admin-uploaded photos are left alone.
 BROKEN_KARAHI_URL = "https://images.unsplash.com/photo-1585937421612-70a008356fa1?w=600&h=450&fit=crop"
+BROKEN_PARATHA_URL = "https://pizzacottage.pro/images/chicken_pratha_roll_user.webp"
 
 
 def init_db():
@@ -283,7 +284,7 @@ def init_db():
 
         # Idempotent menu seeding: add any missing seed dishes (so redeploys
         # grow the menu on existing databases), retire dishes dropped from
-        # the canonical menu, and repair the dead Karahi photo URL.
+        # the canonical menu, and repair dead photo URLs (Karahi, Paratha Roll).
         # Admin-customized dishes are never touched.
         for spec in SEED_MENU_ITEMS:
             item = MenuItem.query.filter_by(name=spec["name"]).first()
@@ -293,6 +294,9 @@ def init_db():
             elif item.image_url == BROKEN_KARAHI_URL:
                 item.image_url = spec["image_url"]
                 print("Repaired Chicken Karahi image URL.")
+            elif item.image_url == BROKEN_PARATHA_URL:
+                item.image_url = spec["image_url"]
+                print("Repaired Chicken Paratha Roll image URL.")
         # Retire seed dishes dropped from the canonical menu: hide them
         # (active=False) rather than deleting, so old orders still resolve.
         # Only rows that still match the original seed values are touched.

@@ -103,10 +103,13 @@ class SecurityTestCase(unittest.TestCase):
             self.assertTrue(i.image_url.startswith("https://"))
 
     def test_seed_is_idempotent_and_repairs_broken_karahi(self):
-        from app import init_db, BROKEN_KARAHI_URL
+        from app import init_db, BROKEN_KARAHI_URL, BROKEN_PARATHA_URL
         db.session.add(MenuItem(name="Chicken Karahi", price=1200,
                                 category="Main Course", rating=4.8,
                                 image_url=BROKEN_KARAHI_URL))
+        db.session.add(MenuItem(name="Chicken Paratha Roll", price=350,
+                                category="Fast Food", rating=4.7,
+                                image_url=BROKEN_PARATHA_URL))
         db.session.commit()
         init_db()
         init_db()  # second run must not duplicate
@@ -114,6 +117,8 @@ class SecurityTestCase(unittest.TestCase):
         self.assertEqual(len(items), 14)
         karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
         self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
+        roll = MenuItem.query.filter_by(name="Chicken Paratha Roll").first()
+        self.assertNotEqual(roll.image_url, BROKEN_PARATHA_URL)
 
     def test_seed_retires_western_dishes_but_keeps_them_for_orders(self):
         """Retired seed rows are hidden (active=False), not deleted, so old
