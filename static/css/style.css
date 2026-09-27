@@ -269,3 +269,306 @@ h1, h2, h3, h4, h5, .zp-brand, .zp-heading {
 .zp-footer .zp-brand i {
     color: var(--zp-turmeric);
 }
+
+/* =========================================================
+   PRO MENU (v2) -- Zomato/Swiggy-inspired browse experience
+   ========================================================= */
+
+/* ---------- Navbar cart badge ---------- */
+.zp-cart-badge {
+    position: absolute;
+    top: 2px;
+    right: -6px;
+    background: var(--zp-turmeric);
+    color: var(--zp-charcoal);
+    font-size: 0.68rem;
+    font-weight: 800;
+    min-width: 18px;
+    height: 18px;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 10px;
+    padding: 0 5px;
+}
+
+/* ---------- Restaurant header ---------- */
+.zp-rest-header {
+    background: #fff;
+    border-radius: var(--zp-card-radius);
+    box-shadow: 0 3px 14px rgba(34,31,31,0.08);
+    padding: 1.25rem 1.25rem 1rem;
+    margin-bottom: 0;
+}
+.zp-rest-top {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+.zp-rest-logo {
+    width: 58px;
+    height: 58px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--zp-maroon), var(--zp-maroon-dark));
+    color: var(--zp-turmeric);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+    flex-shrink: 0;
+}
+.zp-rest-name {
+    font-size: 1.45rem;
+    margin: 0 0 4px;
+}
+.zp-rest-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: #6b6560;
+    flex-wrap: wrap;
+}
+.zp-meta-sep { opacity: 0.5; }
+.zp-rating-badge {
+    background: var(--zp-green);
+    color: #fff;
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.zp-rating-badge i { font-size: 0.7rem; }
+.zp-rating-sm { font-size: 0.75rem; }
+
+.zp-offer-strip {
+    margin-top: 12px;
+    background: linear-gradient(90deg, #fff4e0, #ffe9c4);
+    border: 1px dashed var(--zp-turmeric-dark);
+    color: #7a4d08;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 12px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.zp-offer-strip i { color: var(--zp-turmeric-dark); }
+
+.zp-search-wrap {
+    position: relative;
+    margin-top: 12px;
+}
+.zp-search-wrap > i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #a09a93;
+}
+.zp-search {
+    padding-left: 40px !important;
+    border-radius: 24px !important;
+    border: 1.5px solid #eee0cf !important;
+    background: var(--zp-cream) !important;
+    height: 44px;
+}
+.zp-search:focus {
+    border-color: var(--zp-maroon) !important;
+    box-shadow: 0 0 0 3px rgba(179,40,45,0.12) !important;
+}
+
+/* ---------- Sticky category pills ---------- */
+.zp-catbar {
+    position: sticky;
+    top: 56px;
+    z-index: 900;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 12px 2px;
+    margin: 0 -2px 4px;
+    background: linear-gradient(var(--zp-cream) 85%, transparent);
+    scrollbar-width: none;
+}
+.zp-catbar::-webkit-scrollbar { display: none; }
+.zp-cat-pill {
+    flex-shrink: 0;
+    background: #fff;
+    border: 1.5px solid #eee0cf;
+    color: var(--zp-charcoal);
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 7px 18px;
+    border-radius: 24px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+.zp-cat-pill:hover { border-color: var(--zp-maroon); color: var(--zp-maroon); }
+.zp-cat-pill.active {
+    background: var(--zp-maroon);
+    border-color: var(--zp-maroon);
+    color: #fff;
+}
+
+/* ---------- Dish rows ---------- */
+.zp-cat-section {
+    scroll-margin-top: 130px;
+    margin-bottom: 8px;
+}
+.zp-cat-title {
+    font-size: 1.15rem;
+    margin: 18px 0 6px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+.zp-cat-count {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #a09a93;
+}
+.zp-dish {
+    display: flex;
+    gap: 14px;
+    background: #fff;
+    border-radius: var(--zp-card-radius);
+    box-shadow: 0 2px 10px rgba(34,31,31,0.06);
+    padding: 14px;
+    margin-bottom: 12px;
+    align-items: stretch;
+}
+.zp-dish-info { flex: 1; min-width: 0; }
+.zp-tag-bestseller {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #c26a00;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 4px;
+}
+.zp-dish-name {
+    font-size: 1.02rem;
+    margin: 0 0 2px;
+    line-height: 1.3;
+}
+.zp-dish-price {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 6px;
+}
+.zp-dish-media {
+    position: relative;
+    width: 128px;
+    flex-shrink: 0;
+}
+.zp-dish-media img,
+.zp-dish-placeholder {
+    width: 128px;
+    height: 118px;
+    object-fit: cover;
+    border-radius: 14px;
+    display: block;
+}
+.zp-dish-placeholder {
+    background: linear-gradient(135deg, #f3e4c8, #f7d9a8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--zp-maroon);
+    opacity: 0.55;
+}
+
+/* ADD button + stepper (overlapping the photo, like Swiggy/Zomato) */
+.zp-addform { position: static; }
+.zp-add-btn {
+    position: absolute;
+    left: 50%;
+    bottom: -12px;
+    transform: translateX(-50%);
+    background: #fff;
+    border: 1.5px solid var(--zp-green);
+    color: var(--zp-green);
+    font-weight: 800;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    padding: 6px 26px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.16);
+    cursor: pointer;
+    white-space: nowrap;
+}
+.zp-add-btn span { font-size: 1rem; line-height: 1; }
+.zp-add-btn:hover { background: var(--zp-green); color: #fff; }
+.zp-stepper {
+    position: absolute;
+    left: 50%;
+    bottom: -12px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1.5px solid var(--zp-green);
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.16);
+    overflow: hidden;
+    white-space: nowrap;
+}
+.zp-stepper form { display: inline; margin: 0; }
+.zp-stepper button {
+    background: none;
+    border: none;
+    color: var(--zp-green);
+    font-weight: 800;
+    font-size: 1.05rem;
+    width: 34px;
+    height: 32px;
+    cursor: pointer;
+    line-height: 1;
+}
+.zp-stepper button:hover { background: rgba(63,125,79,0.1); }
+.zp-stepper-qty {
+    font-weight: 800;
+    font-size: 0.9rem;
+    min-width: 22px;
+    text-align: center;
+    color: var(--zp-charcoal);
+}
+
+/* ---------- Sticky cart bar ---------- */
+.zp-cartbar {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 18px;
+    width: min(560px, calc(100% - 32px));
+    background: var(--zp-maroon);
+    color: #fff;
+    border-radius: 16px;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    text-decoration: none;
+    box-shadow: 0 8px 24px rgba(140,31,35,0.4);
+    z-index: 1000;
+}
+.zp-cartbar:hover { color: #fff; background: var(--zp-maroon-dark); }
+.zp-cartbar-right { display: flex; align-items: center; gap: 6px; }
+
+/* Keep the old hero/cards for admin + fallback pages */
+@media (max-width: 576px) {
+    .zp-dish-media, .zp-dish-media img, .zp-dish-placeholder { width: 104px; }
+    .zp-dish-media img, .zp-dish-placeholder { height: 100px; }
+    .zp-rest-name { font-size: 1.2rem; }
+}

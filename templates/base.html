@@ -38,6 +38,7 @@
                         <li class="nav-item"><a class="nav-link" href="{{ url_for('menu') }}">Menu</a></li>
                         <li class="nav-item"><a class="nav-link position-relative" href="{{ url_for('view_cart') }}">
                             <i class="bi bi-cart3"></i> Cart
+                            {% if cart_count %}<span class="zp-cart-badge">{{ cart_count }}</span>{% endif %}
                         </a></li>
                     {% endif %}
                     <li class="nav-item ms-lg-2">

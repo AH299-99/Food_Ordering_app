@@ -147,6 +147,16 @@ def current_user():
     return None
 
 
+@app.context_processor
+def inject_cart_count():
+    """Navbar cart badge for logged-in customers (0 keeps the badge hidden)."""
+    count = 0
+    if session.get("role") == "customer":
+        for raw_qty in session.get("cart", {}).values():
+            count += _parse_int(raw_qty, default=0, minimum=0) or 0
+    return {"cart_count": count}
+
+
 # ----------------------------------------------------------------------
 # Input validation helpers
 # ----------------------------------------------------------------------
@@ -272,7 +282,8 @@ def home():
         return redirect(url_for("login"))
     if session.get("role") == "admin":
         return redirect(url_for("admin_dashboard"))
-    return redirect(url_for("customer_dashboard"))
+    # Customers land on the menu (browse) like professional food apps.
+    return redirect(url_for("menu"))
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -343,7 +354,26 @@ def logout():
 def menu():
     items = MenuItem.query.all()
     categories = sorted({i.category for i in items})
-    return render_template("menu.html", items=items, categories=categories)
+    # Cart summary for the menu page: per-item quantities (for ADD steppers)
+    # plus the sticky cart bar totals.
+    price_map = {i.id: i.price for i in items}
+    cart = session.get("cart", {})
+    cart_qty, cart_count, cart_total = {}, 0, 0
+    for key, raw_qty in cart.items():
+        try:
+            item_id = int(key)
+        except (TypeError, ValueError):
+            continue
+        qty = _parse_int(raw_qty, default=0, minimum=1)
+        if not qty or item_id not in price_map:
+            continue
+        cart_qty[item_id] = qty
+        cart_count += qty
+        cart_total += price_map[item_id] * qty
+    avg_rating = round(sum(i.rating for i in items) / len(items), 1) if items else 0
+    return render_template("menu.html", items=items, categories=categories,
+                           cart_qty=cart_qty, cart_count=cart_count,
+                           cart_total=cart_total, avg_rating=avg_rating)
 
 
 @app.route("/cart/add/<int:item_id>", methods=["POST"])
@@ -391,6 +421,22 @@ def remove_from_cart(item_id):
     session["cart"] = cart
     session.modified = True
     return redirect(url_for("view_cart"))
+
+
+@app.route("/cart/decrease/<int:item_id>", methods=["POST"])
+@login_required
+def decrease_in_cart(item_id):
+    """Step the menu-page quantity stepper down by one (removes at zero)."""
+    cart = session.get("cart", {})
+    key = str(item_id)
+    qty = _parse_int(cart.get(key), default=0, minimum=1)
+    if qty <= 1:
+        cart.pop(key, None)
+    else:
+        cart[key] = qty - 1
+    session["cart"] = cart
+    session.modified = True
+    return redirect(url_for("menu"))
 
 
 @app.route("/cart/checkout", methods=["POST"])

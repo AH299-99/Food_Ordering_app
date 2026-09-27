@@ -1,56 +1,141 @@
 {% extends "base.html" %}
-{% block title %}Menu - {{ brand_name }}{% endblock %}
+{% block title %}Order Food - {{ brand_name }}{% endblock %}
 {% block content %}
 
-<div class="zp-hero">
-    <span class="zp-hero-badge">Aaj Ka Zaiqa</span>
-    <h1>Bhook lagi hai? Order kar lein!</h1>
-    <p>Taza aur garam khana, seedha aap ki dahleez tak.</p>
-</div>
-
-<div class="mb-4">
-    {% for category in categories %}
-    <span class="zp-chip"><i class="bi bi-egg-fried me-1"></i>{{ category }}</span>
-    {% endfor %}
-</div>
-
-{% for category in categories %}
-<h5 class="zp-heading mt-4 mb-3">{{ category }}</h5>
-<div class="row g-3">
-    {% for item in items if item.category == category %}
-    <div class="col-md-4">
-        <div class="card zp-food-card">
-            <div class="zp-food-img-wrap">
-                {% if item.image_url %}
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}"
-                         onerror="this.parentElement.innerHTML='<div class=&quot;zp-food-placeholder&quot;><i class=&quot;bi bi-egg-fried&quot;></i></div>';">
-                {% else %}
-                    <div class="zp-food-placeholder"><i class="bi bi-egg-fried"></i></div>
-                {% endif %}
-                <span class="zp-price-tag">Rs. {{ item.price | int }}</span>
-            </div>
-            <div class="card-body">
-                <div class="zp-category-label">{{ item.category }}</div>
-                <h5 class="card-title">{{ item.name }}</h5>
-                <div class="zp-rating mb-2">
-                    <i class="bi bi-star-fill"></i> {{ item.rating }}
-                    <span class="text-muted fw-normal">(placeholder rating)</span>
-                </div>
-                <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}" class="d-flex gap-2">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="number" name="quantity" value="1" min="1" class="form-control" style="width: 75px;">
-                    <button type="submit" class="btn zp-btn-primary text-white flex-grow-1">
-                        <i class="bi bi-cart-plus"></i> Add
-                    </button>
-                </form>
+{# ---------- Restaurant header (Zomato/Swiggy style) ---------- #}
+<div class="zp-rest-header">
+    <div class="zp-rest-top">
+        <div class="zp-rest-logo"><i class="bi bi-egg-fried"></i></div>
+        <div class="flex-grow-1">
+            <h1 class="zp-rest-name">{{ brand_name }}</h1>
+            <div class="zp-rest-meta">
+                <span class="zp-rating-badge"><i class="bi bi-star-fill"></i> {{ avg_rating }}</span>
+                <span class="zp-meta-sep">•</span>
+                <span><i class="bi bi-clock"></i> 30–40 min</span>
+                <span class="zp-meta-sep">•</span>
+                <span><i class="bi bi-geo-alt"></i> Peshawar</span>
             </div>
         </div>
     </div>
-    {% endfor %}
+    <div class="zp-offer-strip">
+        <i class="bi bi-lightning-charge-fill"></i>
+        Taza aur garam khana — seedha aap ki dahleez tak
+    </div>
+    <div class="zp-search-wrap">
+        <i class="bi bi-search"></i>
+        <input id="zp-dish-search" type="search" class="form-control zp-search"
+               placeholder="Search biryani, burger, karahi..." autocomplete="off">
+    </div>
 </div>
+
+{# ---------- Sticky category pills ---------- #}
+<nav class="zp-catbar" aria-label="Menu categories">
+    {% for category in categories %}
+    <a class="zp-cat-pill" href="#cat-{{ category|lower|replace(' ', '-')|replace('/', '-') }}">{{ category }}</a>
+    {% endfor %}
+</nav>
+
+<div id="zp-menu-list">
+{% for category in categories %}
+<section class="zp-cat-section" id="cat-{{ category|lower|replace(' ', '-')|replace('/', '-') }}">
+    <h2 class="zp-cat-title">{{ category }}
+        <span class="zp-cat-count">{{ items|selectattr('category', 'equalto', category)|list|length }} item{{ 's' if items|selectattr('category', 'equalto', category)|list|length != 1 }}</span>
+    </h2>
+
+    {% for item in items if item.category == category %}
+    {% set qty = cart_qty.get(item.id, 0) %}
+    <article class="zp-dish" data-name="{{ item.name|lower }}">
+        <div class="zp-dish-info">
+            {% if item.rating and item.rating >= 4.6 %}
+            <span class="zp-tag-bestseller"><i class="bi bi-award-fill"></i> Bestseller</span>
+            {% endif %}
+            <h3 class="zp-dish-name">{{ item.name }}</h3>
+            <div class="zp-dish-price">Rs. {{ item.price | int }}</div>
+            <div class="zp-dish-rating">
+                <span class="zp-rating-badge zp-rating-sm"><i class="bi bi-star-fill"></i> {{ item.rating }}</span>
+            </div>
+        </div>
+        <div class="zp-dish-media">
+            {% if item.image_url %}
+                <img src="{{ item.image_url }}" alt="{{ item.name }}" loading="lazy"
+                     onerror="this.outerHTML='<div class=&quot;zp-dish-placeholder&quot;><i class=&quot;bi bi-egg-fried&quot;></i></div>';">
+            {% else %}
+                <div class="zp-dish-placeholder"><i class="bi bi-egg-fried"></i></div>
+            {% endif %}
+            {% if qty > 0 %}
+            <div class="zp-stepper">
+                <form method="POST" action="{{ url_for('decrease_in_cart', item_id=item.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" aria-label="Remove one">−</button>
+                </form>
+                <span class="zp-stepper-qty">{{ qty }}</span>
+                <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="quantity" value="1">
+                    <button type="submit" aria-label="Add one">+</button>
+                </form>
+            </div>
+            {% else %}
+            <form method="POST" action="{{ url_for('add_to_cart', item_id=item.id) }}" class="zp-addform">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="zp-add-btn">ADD <span>+</span></button>
+            </form>
+            {% endif %}
+        </div>
+    </article>
+    {% endfor %}
+</section>
 {% endfor %}
+</div>
+
+<div id="zp-no-results" class="alert alert-secondary text-center d-none">
+    Kuch nahi mila — kuch aur search karein.
+</div>
 
 {% if not items %}
 <div class="alert alert-secondary">No menu items available yet.</div>
 {% endif %}
+
+{# ---------- Sticky cart bar ---------- #}
+{% if cart_count > 0 %}
+<a href="{{ url_for('view_cart') }}" class="zp-cartbar">
+    <span class="zp-cartbar-left">{{ cart_count }} item{{ 's' if cart_count != 1 }} · Rs. {{ cart_total | int }}</span>
+    <span class="zp-cartbar-right">View Cart <i class="bi bi-arrow-right"></i></span>
+</a>
+{% endif %}
+
+<script>
+(function () {
+    var input = document.getElementById('zp-dish-search');
+    var empty = document.getElementById('zp-no-results');
+    if (!input) return;
+    input.addEventListener('input', function () {
+        var q = input.value.trim().toLowerCase();
+        var visible = 0;
+        document.querySelectorAll('.zp-dish').forEach(function (dish) {
+            var show = !q || dish.dataset.name.indexOf(q) !== -1;
+            dish.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+        document.querySelectorAll('.zp-cat-section').forEach(function (sec) {
+            var anyVisible = Array.prototype.some.call(
+                sec.querySelectorAll('.zp-dish'),
+                function (d) { return d.style.display !== 'none'; }
+            );
+            sec.style.display = anyVisible ? '' : 'none';
+        });
+        empty.classList.toggle('d-none', visible !== 0);
+    });
+    // Active pill highlight on click
+    var pills = document.querySelectorAll('.zp-cat-pill');
+    pills.forEach(function (p) {
+        p.addEventListener('click', function () {
+            pills.forEach(function (x) { x.classList.remove('active'); });
+            p.classList.add('active');
+        });
+    });
+    if (pills.length) pills[0].classList.add('active');
+})();
+</script>
 {% endblock %}

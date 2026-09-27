@@ -121,6 +121,44 @@ class SecurityTestCase(unittest.TestCase):
         self.assertIsNotNone(item)
         self.assertEqual(item.image_url, "https://example.com/food.jpg")
 
+    # -- pro menu behaviour ----------------------------------------------
+    def test_home_redirects_customer_to_menu(self):
+        self._register("browse", "password123")
+        self._login("browse", "password123")
+        r = self.client.get("/", follow_redirects=False)
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(r.headers["Location"].endswith("/menu"))
+
+    def test_menu_renders_pro_layout(self):
+        self._register("viewer", "password123")
+        self._login("viewer", "password123")
+        html = self.client.get("/menu").get_data(as_text=True)
+        self.assertIn("zp-dish", html)
+        self.assertIn("zp-catbar", html)
+        self.assertIn("zp-dish-search", html)
+
+    def test_decrease_route_steps_quantity_down(self):
+        self._register("stepper", "password123")
+        self._login("stepper", "password123")
+        item = MenuItem(name="Stepper Biryani", price=350,
+                        category="Main Course", rating=4.7)
+        db.session.add(item)
+        db.session.commit()
+        self.client.post(f"/cart/add/{item.id}", data={"quantity": "2"})
+        r = self.client.post(f"/cart/decrease/{item.id}",
+                             follow_redirects=False)
+        self.assertEqual(r.status_code, 302)
+        html = self.client.get("/menu").get_data(as_text=True)
+        self.assertIn("zp-stepper-qty", html)
+        # decrease to zero removes the item -> ADD button returns
+        self.client.post(f"/cart/decrease/{item.id}")
+        html = self.client.get("/menu").get_data(as_text=True)
+        self.assertIn("zp-add-btn", html)
+
+    def test_decrease_requires_post(self):
+        resp = self.client.get("/cart/decrease/1")
+        self.assertEqual(resp.status_code, 405)
+
 
 class CsrfPlumbingTestCase(unittest.TestCase):
     """End-to-end form flow WITH CSRF enabled (the production default),
