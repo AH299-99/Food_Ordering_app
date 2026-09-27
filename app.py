@@ -102,6 +102,10 @@ class MenuItem(db.Model):
     # _sanitize_image_url) so a stored `javascript:` URL can never execute.
     image_url = db.Column(db.String(500), nullable=True)
     rating = db.Column(db.Float, nullable=False, default=4.5)
+    # Soft-retire flag: retired seed dishes are hidden from the customer
+    # menu but kept for old orders (admin dashboard reads order.item).
+    active = db.Column(db.Boolean, nullable=False, default=True,
+                       server_default="1")
 
     order_items = db.relationship("Order", backref="item", lazy=True)
 
@@ -204,7 +208,7 @@ def _sanitize_image_url(raw_url):
 # Database initialization + dummy seed data
 # ----------------------------------------------------------------------
 
-# Canonical menu: every category has at least 3 dishes.
+# Canonical menu: 100% Pakistani dishes, every category has at least 3.
 # (image_url values are placeholder stock photos so the demo looks
 # like a real food-ordering app out of the box -- replace them with
 # your own restaurant's photos any time from Admin > Manage Menu)
@@ -215,24 +219,37 @@ SEED_MENU_ITEMS = [
          image_url="https://forksandfigs.com/wp-content/uploads/2025/05/rich_flavorful_chicken_karahi_kb5hp.jpg"),
     dict(name="Beef Chapli Kebab", price=600, category="Main Course", rating=4.7,
          image_url="https://www.remitly.com/blog/wp-content/uploads/2024/08/Chapli-Kebab-pakistan-1024x730.jpg"),
-    dict(name="Beef Burger", price=450, category="Fast Food", rating=4.4,
-         image_url="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=450&fit=crop"),
-    dict(name="Vegetable Pizza", price=900, category="Fast Food", rating=4.6,
-         image_url="https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600&h=450&fit=crop"),
-    dict(name="Chicken Zinger Burger", price=380, category="Fast Food", rating=4.6,
-         image_url="https://izzycooking.com/wp-content/uploads/2021/03/Zinger-Burger-3.jpg"),
-    dict(name="Cold Coffee", price=250, category="Beverages", rating=4.3,
-         image_url="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600&h=450&fit=crop"),
+    dict(name="BBQ Platter", price=1500, category="Main Course", rating=4.9,
+         image_url="https://punjabimehfil.com/wp-content/uploads/2026/06/punjabimehfil-9-768x768.jpeg"),
+    dict(name="Bun Kebab", price=250, category="Fast Food", rating=4.6,
+         image_url="https://i0.wp.com/eathealthy365.com/wp-content/uploads/authentic-homemade-bun-kabab-recipe.webp?w=830&h=467&crop=1&quality=60&ssl=1"),
+    dict(name="Chicken Shawarma", price=300, category="Fast Food", rating=4.5,
+         image_url="https://framerusercontent.com/images/92eSB6xiJFZJjmChoR5OxKtCyAU.png?width=1024&height=1536"),
+    dict(name="Chicken Paratha Roll", price=350, category="Fast Food", rating=4.7,
+         image_url="https://pizzacottage.pro/images/chicken_pratha_roll_user.webp"),
+    dict(name="Doodh Patti", price=120, category="Beverages", rating=4.6,
+         image_url="https://www.jcookingodyssey.com/wp-content/uploads/2026/05/doodh-patti-chai-1.jpg"),
     dict(name="Mango Lassi", price=200, category="Beverages", rating=4.5,
          image_url="https://www.vegrecipesofindia.com/wp-content/uploads/2021/05/mango-lassi-recipe-2.jpg"),
     dict(name="Mint Margarita", price=180, category="Beverages", rating=4.4,
          image_url="https://www.acouplecooks.com/wp-content/uploads/2022/04/Mint-Lemonade-006.jpg"),
-    dict(name="French Fries", price=200, category="Sides", rating=4.5,
-         image_url="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=450&fit=crop"),
+    dict(name="Samosa (2 pcs)", price=100, category="Sides", rating=4.5,
+         image_url="https://www.eitanbernath.com/wp-content/uploads/2019/06/SAMOSA-538-LOW-RES-819x1024.jpg"),
     dict(name="Garlic Naan", price=80, category="Sides", rating=4.5,
          image_url="https://recipesize.com/wp-content/uploads/2026/06/u7196759841_Garlic_Naan_Bread_front_angle_shot_low_angle_shot_k_d9ba3362-74ca-41db-81de-f6ab62690012-768x768.webp"),
     dict(name="Masala Fries", price=250, category="Sides", rating=4.4,
          image_url="https://www.jcookingodyssey.com/wp-content/uploads/2021/09/masala-chips-blog-1.jpg"),
+]
+
+# Seed dishes retired from the canonical menu. The row is hidden (not
+# deleted) so old orders still resolve, and only when it still matches the
+# original seed values -- an admin-customized dish is never touched.
+RETIRED_SEED_ITEMS = [
+    dict(name="Cold Coffee", price=250, category="Beverages"),
+    dict(name="Beef Burger", price=450, category="Fast Food"),
+    dict(name="Vegetable Pizza", price=900, category="Fast Food"),
+    dict(name="Chicken Zinger Burger", price=380, category="Fast Food"),
+    dict(name="French Fries", price=200, category="Sides"),
 ]
 
 # The old Chicken Karahi photo URL went dead (404). If a database still
@@ -249,9 +266,21 @@ def init_db():
     with app.app_context():
         db.create_all()
 
+        # Migrate existing databases to the new `active` column (create_all
+        # never adds columns to tables that already exist). Runs first, so
+        # the seed/retire logic below can rely on the column being present.
+        from sqlalchemy import inspect, text
+        if "active" not in [c["name"] for c in
+                            inspect(db.engine).get_columns("menu_items")]:
+            with db.engine.begin() as conn:
+                conn.execute(text(
+                    "ALTER TABLE menu_items ADD COLUMN active BOOLEAN DEFAULT 1"))
+            print("Migrated menu_items: added active column.")
+
         # Idempotent menu seeding: add any missing seed dishes (so redeploys
-        # grow the menu on existing databases) and repair the dead Karahi
-        # photo URL. Admin-customized dishes are never touched.
+        # grow the menu on existing databases), retire dishes dropped from
+        # the canonical menu, and repair the dead Karahi photo URL.
+        # Admin-customized dishes are never touched.
         for spec in SEED_MENU_ITEMS:
             item = MenuItem.query.filter_by(name=spec["name"]).first()
             if item is None:
@@ -260,7 +289,16 @@ def init_db():
             elif item.image_url == BROKEN_KARAHI_URL:
                 item.image_url = spec["image_url"]
                 print("Repaired Chicken Karahi image URL.")
+        # Retire seed dishes dropped from the canonical menu: hide them
+        # (active=False) rather than deleting, so old orders still resolve.
+        # Only rows that still match the original seed values are touched.
+        for retired in RETIRED_SEED_ITEMS:
+            stale = MenuItem.query.filter_by(**retired).first()
+            if stale is not None and stale.active:
+                stale.active = False
+                print(f"Retired menu item: {retired['name']}")
         db.session.commit()
+
 
         # Seed a few dummy orders so the admin chart isn't empty on first run.
         # Only possible once at least one customer account exists.
@@ -360,7 +398,7 @@ def logout():
 @app.route("/menu")
 @login_required
 def menu():
-    items = MenuItem.query.all()
+    items = MenuItem.query.filter_by(active=True).all()
     categories = sorted({i.category for i in items})
     # Cart summary for the menu page: per-item quantities (for ADD steppers)
     # plus the sticky cart bar totals.
@@ -388,7 +426,7 @@ def menu():
 @login_required
 def add_to_cart(item_id):
     item = db.session.get(MenuItem, item_id)
-    if item is None:
+    if item is None or not item.active:
         abort(404)
     qty = _parse_int(request.form.get("quantity"), default=1, minimum=1)
     cart = session.get("cart", {})

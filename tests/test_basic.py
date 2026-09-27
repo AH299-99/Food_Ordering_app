@@ -74,20 +74,32 @@ class SecurityTestCase(unittest.TestCase):
             resp = self._login(username, password)
             self.assertIn(b"Invalid username or password", resp.data)
 
-    # -- 4b. menu seeding: 3 dishes per category, dead Karahi photo repaired -
-    def test_seed_menu_three_per_category(self):
+    # -- 4b. menu seeding: Pakistani-only menu, 3+ dishes per category --
+    def test_seed_menu_pakistani_three_per_category(self):
         from app import init_db, BROKEN_KARAHI_URL
         init_db()
         items = MenuItem.query.all()
-        self.assertEqual(len(items), 12)
+        self.assertEqual(len(items), 13)
         by_cat = {}
         for i in items:
             by_cat.setdefault(i.category, []).append(i)
-        for cat in ("Beverages", "Fast Food", "Main Course", "Sides"):
+        self.assertGreaterEqual(len(by_cat.get("Main Course", [])), 3)
+        for cat in ("Beverages", "Fast Food", "Sides"):
             self.assertGreaterEqual(len(by_cat.get(cat, [])), 3, cat)
+        # 100% Pakistani menu: no western dishes in the canonical seeds
+        names = {i.name for i in items}
+        self.assertNotIn("Beef Burger", names)
+        self.assertNotIn("Vegetable Pizza", names)
+        self.assertNotIn("Chicken Zinger Burger", names)
+        self.assertNotIn("French Fries", names)
+        self.assertNotIn("Cold Coffee", names)
+        self.assertIn("BBQ Platter", names)
+        self.assertIn("Doodh Patti", names)
+        self.assertIn("Samosa (2 pcs)", names)
         karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
         self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
         for i in items:
+            self.assertTrue(i.active)
             self.assertTrue(i.image_url.startswith("https://"))
 
     def test_seed_is_idempotent_and_repairs_broken_karahi(self):
@@ -99,9 +111,54 @@ class SecurityTestCase(unittest.TestCase):
         init_db()
         init_db()  # second run must not duplicate
         items = MenuItem.query.all()
-        self.assertEqual(len(items), 12)
+        self.assertEqual(len(items), 13)
         karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
         self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
+
+    def test_seed_retires_western_dishes_but_keeps_them_for_orders(self):
+        """Retired seed rows are hidden (active=False), not deleted, so old
+        orders still resolve -- and only when they still match seed values."""
+        from app import init_db, RETIRED_SEED_ITEMS
+        for retired in RETIRED_SEED_ITEMS:
+            db.session.add(MenuItem(active=True, rating=4.0,
+                                    image_url="https://example.com/x.jpg",
+                                    **retired))
+        # Admin-customized row: same name, different price -- must be kept
+        db.session.add(MenuItem(name="Beef Burger", price=500,
+                                category="Fast Food", rating=4.4, active=True,
+                                image_url="https://example.com/y.jpg"))
+        db.session.commit()
+        init_db()
+        for retired in RETIRED_SEED_ITEMS:
+            stale = MenuItem.query.filter_by(**retired).first()
+            self.assertIsNotNone(stale, retired)  # not deleted
+            self.assertFalse(stale.active, retired)  # hidden
+        custom = MenuItem.query.filter_by(name="Beef Burger", price=500).first()
+        self.assertIsNotNone(custom)
+        self.assertTrue(custom.active)  # admin edit never touched
+
+    def test_menu_and_cart_hide_retired_dishes(self):
+        from app import init_db
+        db.session.add(MenuItem(name="Vegetable Pizza", price=900,
+                                category="Fast Food", rating=4.6, active=True,
+                                image_url="https://example.com/x.jpg"))
+        db.session.commit()
+        init_db()
+        stale = MenuItem.query.filter_by(name="Vegetable Pizza").first()
+        self.assertFalse(stale.active)
+        self._register("diner", "password123")
+        self._login("diner", "password123")
+        resp = self.client.get("/menu")
+        self.assertNotIn(b"Vegetable Pizza", resp.data)
+        self.assertIn(b"BBQ Platter", resp.data)
+        resp = self.client.post(f"/cart/add/{stale.id}")
+        self.assertEqual(resp.status_code, 404)
+        shawarma = MenuItem.query.filter_by(name="Chicken Shawarma").first()
+        resp = self.client.post(f"/cart/add/{shawarma.id}")
+        self.assertEqual(resp.status_code, 302)  # active dishes still addable
+        bev = MenuItem.query.filter_by(category="Beverages",
+                                       active=True).all()
+        self.assertEqual(len(bev), 3)
 
     # -- 5. state-changing routes reject GET ------------------------------
     def test_logout_requires_post(self):
