@@ -572,3 +572,31 @@ h1, h2, h3, h4, h5, .zp-brand, .zp-heading {
     .zp-dish-media img, .zp-dish-placeholder { height: 100px; }
     .zp-rest-name { font-size: 1.2rem; }
 }
+
+/* ---------- Search row with button ---------- */
+.zp-search-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    align-items: stretch;
+}
+.zp-search-row .zp-search-wrap {
+    flex: 1;
+    margin-top: 0;
+}
+.zp-search-btn {
+    height: 44px;
+    padding: 0 22px;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+/* pills are now <button> elements */
+button.zp-cat-pill {
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* Defensive: empty-state stays hidden even if the CDN stylesheet hiccups */
+#zp-no-results.d-none { display: none !important; }

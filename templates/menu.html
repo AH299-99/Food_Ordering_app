@@ -21,23 +21,29 @@
         <i class="bi bi-lightning-charge-fill"></i>
         Taza aur garam khana — seedha aap ki dahleez tak
     </div>
-    <div class="zp-search-wrap">
-        <i class="bi bi-search"></i>
-        <input id="zp-dish-search" type="search" class="form-control zp-search"
-               placeholder="Search biryani, burger, karahi..." autocomplete="off">
-    </div>
+    <form class="zp-search-row" id="zp-search-form" role="search">
+        <div class="zp-search-wrap">
+            <i class="bi bi-search"></i>
+            <input id="zp-dish-search" type="search" class="form-control zp-search"
+                   placeholder="Search biryani, burger, karahi..." autocomplete="off">
+        </div>
+        <button type="submit" class="btn zp-btn-primary text-white zp-search-btn">
+            <i class="bi bi-search"></i> Search
+        </button>
+    </form>
 </div>
 
-{# ---------- Sticky category pills ---------- #}
+{# ---------- Category pills: tap to filter (like Swiggy/Foodpanda) ---------- #}
 <nav class="zp-catbar" aria-label="Menu categories">
+    <button type="button" class="zp-cat-pill active" data-cat="__all">All</button>
     {% for category in categories %}
-    <a class="zp-cat-pill" href="#cat-{{ category|lower|replace(' ', '-')|replace('/', '-') }}">{{ category }}</a>
+    <button type="button" class="zp-cat-pill" data-cat="{{ category }}">{{ category }}</button>
     {% endfor %}
 </nav>
 
 <div id="zp-menu-list">
 {% for category in categories %}
-<section class="zp-cat-section" id="cat-{{ category|lower|replace(' ', '-')|replace('/', '-') }}">
+<section class="zp-cat-section" data-cat="{{ category }}">
     <h2 class="zp-cat-title">{{ category }}
         <span class="zp-cat-count">{{ items|selectattr('category', 'equalto', category)|list|length }} item{{ 's' if items|selectattr('category', 'equalto', category)|list|length != 1 }}</span>
     </h2>
@@ -108,17 +114,25 @@
 <script>
 (function () {
     var input = document.getElementById('zp-dish-search');
+    var form = document.getElementById('zp-search-form');
     var empty = document.getElementById('zp-no-results');
-    if (!input) return;
-    input.addEventListener('input', function () {
+    var pills = document.querySelectorAll('.zp-cat-pill');
+    var sections = document.querySelectorAll('.zp-cat-section');
+    var activeCat = '__all';
+    if (!input || !form) return;
+
+    function applyFilters() {
         var q = input.value.trim().toLowerCase();
         var visible = 0;
         document.querySelectorAll('.zp-dish').forEach(function (dish) {
-            var show = !q || dish.dataset.name.indexOf(q) !== -1;
+            var sec = dish.closest('.zp-cat-section');
+            var catOk = (activeCat === '__all') || (sec && sec.dataset.cat === activeCat);
+            var textOk = !q || dish.dataset.name.indexOf(q) !== -1;
+            var show = catOk && textOk;
             dish.style.display = show ? '' : 'none';
             if (show) visible++;
         });
-        document.querySelectorAll('.zp-cat-section').forEach(function (sec) {
+        sections.forEach(function (sec) {
             var anyVisible = Array.prototype.some.call(
                 sec.querySelectorAll('.zp-dish'),
                 function (d) { return d.style.display !== 'none'; }
@@ -126,16 +140,24 @@
             sec.style.display = anyVisible ? '' : 'none';
         });
         empty.classList.toggle('d-none', visible !== 0);
-    });
-    // Active pill highlight on click
-    var pills = document.querySelectorAll('.zp-cat-pill');
+    }
+
+    // Category pills filter the list (single tap, like Swiggy/Foodpanda)
     pills.forEach(function (p) {
         p.addEventListener('click', function () {
             pills.forEach(function (x) { x.classList.remove('active'); });
             p.classList.add('active');
+            activeCat = p.dataset.cat;
+            applyFilters();
         });
     });
-    if (pills.length) pills[0].classList.add('active');
+
+    // Live filtering while typing + explicit Search button
+    input.addEventListener('input', applyFilters);
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        applyFilters();
+    });
 })();
 </script>
 {% endblock %}

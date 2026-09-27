@@ -136,6 +136,9 @@ class SecurityTestCase(unittest.TestCase):
         self.assertIn("zp-dish", html)
         self.assertIn("zp-catbar", html)
         self.assertIn("zp-dish-search", html)
+        self.assertIn("zp-search-btn", html)       # search button present
+        self.assertIn('data-cat="__all"', html)    # "All" filter pill
+        self.assertIn("data-cat=", html)           # per-category filter pills
 
     def test_decrease_route_steps_quantity_down(self):
         self._register("stepper", "password123")
