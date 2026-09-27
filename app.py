@@ -208,7 +208,7 @@ def _sanitize_image_url(raw_url):
 # Database initialization + dummy seed data
 # ----------------------------------------------------------------------
 
-# Canonical menu: 100% Pakistani dishes, every category has at least 3.
+# Canonical menu: Pakistani-focused, every category has at least 3 dishes.
 # (image_url values are placeholder stock photos so the demo looks
 # like a real food-ordering app out of the box -- replace them with
 # your own restaurant's photos any time from Admin > Manage Menu)
@@ -227,16 +227,18 @@ SEED_MENU_ITEMS = [
          image_url="https://framerusercontent.com/images/92eSB6xiJFZJjmChoR5OxKtCyAU.png?width=1024&height=1536"),
     dict(name="Chicken Paratha Roll", price=350, category="Fast Food", rating=4.7,
          image_url="https://pizzacottage.pro/images/chicken_pratha_roll_user.webp"),
+    dict(name="Chicken Tikka Pizza", price=950, category="Fast Food", rating=4.6,
+         image_url="https://cdn.cheapism.com/images/chicken-tikka-pizza.original.jpg"),
     dict(name="Doodh Patti", price=120, category="Beverages", rating=4.6,
          image_url="https://www.jcookingodyssey.com/wp-content/uploads/2026/05/doodh-patti-chai-1.jpg"),
-    dict(name="Mango Lassi", price=200, category="Beverages", rating=4.5,
-         image_url="https://www.vegrecipesofindia.com/wp-content/uploads/2021/05/mango-lassi-recipe-2.jpg"),
+    dict(name="Namkeen Lassi", price=150, category="Beverages", rating=4.5,
+         image_url="https://ikneadtoeat.com/wp-content/uploads/2022/11/salty-lassi-6.jpg"),
     dict(name="Mint Margarita", price=180, category="Beverages", rating=4.4,
          image_url="https://www.acouplecooks.com/wp-content/uploads/2022/04/Mint-Lemonade-006.jpg"),
     dict(name="Samosa (2 pcs)", price=100, category="Sides", rating=4.5,
          image_url="https://www.eitanbernath.com/wp-content/uploads/2019/06/SAMOSA-538-LOW-RES-819x1024.jpg"),
-    dict(name="Garlic Naan", price=80, category="Sides", rating=4.5,
-         image_url="https://recipesize.com/wp-content/uploads/2026/06/u7196759841_Garlic_Naan_Bread_front_angle_shot_low_angle_shot_k_d9ba3362-74ca-41db-81de-f6ab62690012-768x768.webp"),
+    dict(name="Zeera Raita", price=100, category="Sides", rating=4.4,
+         image_url="https://i.pinimg.com/originals/b0/32/d7/b032d7acb7b01cd436c3b1e844fdbba7.jpg"),
     dict(name="Masala Fries", price=250, category="Sides", rating=4.4,
          image_url="https://www.jcookingodyssey.com/wp-content/uploads/2021/09/masala-chips-blog-1.jpg"),
 ]
@@ -246,10 +248,12 @@ SEED_MENU_ITEMS = [
 # original seed values -- an admin-customized dish is never touched.
 RETIRED_SEED_ITEMS = [
     dict(name="Cold Coffee", price=250, category="Beverages"),
+    dict(name="Mango Lassi", price=200, category="Beverages"),
     dict(name="Beef Burger", price=450, category="Fast Food"),
     dict(name="Vegetable Pizza", price=900, category="Fast Food"),
     dict(name="Chicken Zinger Burger", price=380, category="Fast Food"),
     dict(name="French Fries", price=200, category="Sides"),
+    dict(name="Garlic Naan", price=80, category="Sides"),
 ]
 
 # The old Chicken Karahi photo URL went dead (404). If a database still

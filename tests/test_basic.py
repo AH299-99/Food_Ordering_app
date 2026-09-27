@@ -74,28 +74,28 @@ class SecurityTestCase(unittest.TestCase):
             resp = self._login(username, password)
             self.assertIn(b"Invalid username or password", resp.data)
 
-    # -- 4b. menu seeding: Pakistani-only menu, 3+ dishes per category --
-    def test_seed_menu_pakistani_three_per_category(self):
+    # -- 4b. menu seeding: Pakistani-focused, 3+ dishes per category --
+    def test_seed_menu_structure(self):
         from app import init_db, BROKEN_KARAHI_URL
         init_db()
         items = MenuItem.query.all()
-        self.assertEqual(len(items), 13)
+        self.assertEqual(len(items), 14)
         by_cat = {}
         for i in items:
             by_cat.setdefault(i.category, []).append(i)
-        self.assertGreaterEqual(len(by_cat.get("Main Course", [])), 3)
-        for cat in ("Beverages", "Fast Food", "Sides"):
-            self.assertGreaterEqual(len(by_cat.get(cat, [])), 3, cat)
-        # 100% Pakistani menu: no western dishes in the canonical seeds
+        self.assertEqual(len(by_cat.get("Beverages", [])), 3)
+        self.assertEqual(len(by_cat.get("Fast Food", [])), 4)
+        self.assertEqual(len(by_cat.get("Main Course", [])), 4)
+        self.assertEqual(len(by_cat.get("Sides", [])), 3)
         names = {i.name for i in items}
-        self.assertNotIn("Beef Burger", names)
-        self.assertNotIn("Vegetable Pizza", names)
-        self.assertNotIn("Chicken Zinger Burger", names)
-        self.assertNotIn("French Fries", names)
-        self.assertNotIn("Cold Coffee", names)
-        self.assertIn("BBQ Platter", names)
-        self.assertIn("Doodh Patti", names)
-        self.assertIn("Samosa (2 pcs)", names)
+        # retired dishes are gone from the canonical menu
+        for gone in ("Beef Burger", "Vegetable Pizza", "Chicken Zinger Burger",
+                     "French Fries", "Cold Coffee", "Mango Lassi", "Garlic Naan"):
+            self.assertNotIn(gone, names)
+        # new dishes are present
+        for present in ("Namkeen Lassi", "Chicken Tikka Pizza", "Zeera Raita",
+                        "BBQ Platter", "Doodh Patti", "Samosa (2 pcs)"):
+            self.assertIn(present, names)
         karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
         self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
         for i in items:
@@ -111,7 +111,7 @@ class SecurityTestCase(unittest.TestCase):
         init_db()
         init_db()  # second run must not duplicate
         items = MenuItem.query.all()
-        self.assertEqual(len(items), 13)
+        self.assertEqual(len(items), 14)
         karahi = MenuItem.query.filter_by(name="Chicken Karahi").first()
         self.assertNotEqual(karahi.image_url, BROKEN_KARAHI_URL)
 
