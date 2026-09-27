@@ -1,5 +1,5 @@
 """
-Online Food Ordering System ("Zaiqa Point")
+Online Food Ordering System ("Hayat Zaiqa Point")
 --------------------------------------------
 Flask backend: user auth, menu CRUD (admin), cart + checkout, order
 history, and an admin dashboard with a "Most Ordered Items" chart.
@@ -682,7 +682,7 @@ def admin_orders():
 
 @app.context_processor
 def inject_user():
-    return dict(current_user=current_user(), brand_name="Zaiqa Point")
+    return dict(current_user=current_user(), brand_name="Hayat Zaiqa Point")
 
 
 # ----------------------------------------------------------------------

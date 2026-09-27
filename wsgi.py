@@ -1,4 +1,4 @@
-"""Production WSGI entry point for Zaiqa Point.
+"""Production WSGI entry point for Hayat Zaiqa Point.
 
 Used by gunicorn on Render: ``gunicorn wsgi:app``.
 Local development still uses ``python app.py``.
